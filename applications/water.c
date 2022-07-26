@@ -51,6 +51,27 @@ void WaterScan_Clear(void)
     WarningNowStatus=0;
     WarningStatus = 0;
 }
+uint8_t Water_Alarm_Pause;
+uint8_t Get_Peak_ON_Level(void)
+{
+    if(!Water_Alarm_Pause)
+    {
+        return HAL_GPIO_ReadPin(WATER_LEAK_PORT,WATER_LEAK_PIN);
+    }
+    else {
+        return 1;
+    }
+}
+uint8_t Get_Peak_LOSS_Level(void)
+{
+    if(!Water_Alarm_Pause)
+    {
+        return HAL_GPIO_ReadPin(WATER_LOS_PORT,WATER_LOS_PIN);
+    }
+    else {
+        return 0;
+    }
+}
 void WaterScan_Callback(void *parameter)
 {
     uint8_t Peak_ON_Level=0;
@@ -58,8 +79,8 @@ void WaterScan_Callback(void *parameter)
 
     while(1)//插入是0，短路是0
     {
-        Peak_ON_Level = HAL_GPIO_ReadPin(WATER_LEAK_PORT,WATER_LEAK_PIN);
-        Peak_Loss_Level = HAL_GPIO_ReadPin(WATER_LOS_PORT,WATER_LOS_PIN);
+        Peak_ON_Level = Get_Peak_ON_Level();
+        Peak_Loss_Level = Get_Peak_LOSS_Level();
         if(Peak_Loss_Level!=0)
         {
             WarningNowStatus=1;//测水线掉落
@@ -123,6 +144,14 @@ void WaterScan_Callback(void *parameter)
         rt_thread_mdelay(500);
     }
 }
+void WaterScan_IO_Init(void)
+{
+    Water_Alarm_Pause = 0;
+}
+void WaterScan_IO_DeInit(void)
+{
+    Water_Alarm_Pause = 1;
+}
 void WaterScan_Init(void)
 {
     GPIO_InitTypeDef  gpio_init_structure = {0};
@@ -132,7 +161,8 @@ void WaterScan_Init(void)
     gpio_init_structure.Mode  = GPIO_MODE_INPUT;
     gpio_init_structure.Pull  = GPIO_NOPULL;
     gpio_init_structure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(KEY_PORT, &gpio_init_structure);
+    HAL_GPIO_Init(GPIOA, &gpio_init_structure);
+    WaterScan_IO_Init();
 
     WaterScan_t = rt_thread_create("WaterScan", WaterScan_Callback, RT_NULL, 512, 10, 10);
     if(WaterScan_t!=RT_NULL)rt_thread_startup(WaterScan_t);

@@ -21,6 +21,7 @@ rt_thread_t button_task=RT_NULL;
 
 extern uint8_t water_alarm_flag;//报警标志
 extern uint8_t water_alarm_state;//当前状态
+extern uint8_t Valve_Alarm_Flag;
 
 void Key_IO_Init(void)
 {
@@ -58,6 +59,10 @@ void K0_Sem_Release(void *parameter)//off
     {
         in_alarm_press_calcel_sound();
     }
+    else if(Valve_Alarm_Flag)
+    {
+        in_alarm_press();
+    }
     else
     {
         water_alarm_flag = 0;
@@ -71,6 +76,10 @@ void K0_Sem_Release(void *parameter)//off
 void K1_Sem_Release(void *parameter)//on
 {
     if(water_alarm_flag)
+    {
+        in_alarm_press();
+    }
+    else if(Valve_Alarm_Flag)
     {
         in_alarm_press();
     }

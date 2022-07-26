@@ -22,6 +22,8 @@ uint8_t ValveNowStatus;
 uint8_t Moto1_Fail_FLag;
 uint8_t Moto2_Fail_FLag;
 
+uint8_t Valve_Alarm_Flag;
+
 void valve_init(void)
 {
     GPIO_InitTypeDef  gpio_init_structure = {0};
@@ -66,12 +68,14 @@ uint8_t Get_Moto2_Fail_FLag(void)
 void Turn1_Timer_Callback(void)
 {
     Key_IO_Init();
+    WaterScan_IO_Init();
     HAL_GPIO_WritePin(GPIOA,VALVE_1_PIN,1);
     if(Turn1_Flag<2)
     {
         if(!Moto2_Fail_FLag)
         {
             led_valve_alarm();
+            Valve_Alarm_Flag = 1;
         }
         Moto1_Fail_FLag = 1;
     }
@@ -80,6 +84,7 @@ void Turn1_Timer_Callback(void)
         if(!Moto2_Fail_FLag)
         {
             led_valve_resume();
+            Valve_Alarm_Flag = 0;
         }
         Moto1_Fail_FLag = 0;
     }
@@ -87,16 +92,19 @@ void Turn1_Timer_Callback(void)
 void Turn2_Timer_Callback(void)
 {
     Key_IO_Init();
+    WaterScan_IO_Init();
     HAL_GPIO_WritePin(GPIOA,VALVE_2_PIN,1);
     if(Turn2_Flag<2)
     {
         led_valve_alarm();
         Moto2_Fail_FLag = 1;
+        Valve_Alarm_Flag = 1;
     }
     else
     {
         led_valve_resume();
         Moto2_Fail_FLag = 0;
+        Valve_Alarm_Flag = 0;
     }
 }
 void EXTI4_15_IRQHandler(void)
@@ -173,12 +181,14 @@ void Moto_Detect(void)
         if(HAL_GPIO_ReadPin(GPIOA,HALL_1_PIN))
         {
             Key_IO_DeInit();
+            WaterScan_IO_DeInit();
             HAL_GPIO_WritePin(GPIOA,VALVE_1_PIN,0);
             rt_timer_start(Moto1_Timer_Act);
         }
         if(HAL_GPIO_ReadPin(GPIOA,HALL_2_PIN))
         {
             Key_IO_DeInit();
+            WaterScan_IO_DeInit();
             HAL_GPIO_WritePin(GPIOA,VALVE_2_PIN,0);
             rt_timer_start(Moto2_Timer_Act);
         }
