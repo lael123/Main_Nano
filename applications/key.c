@@ -1,0 +1,89 @@
+/*
+ * Copyright (c) 2006-2020, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ * 2020-11-25     Rick       the first version
+ */
+#include <rthw.h>
+#include <rtthread.h>
+
+#include "pin_config.h"
+#include "key.h"
+#include "button.h"
+
+Button_t Key0;
+Button_t Key1;
+
+rt_thread_t button_task=RT_NULL;
+
+extern uint8_t water_alarm_flag;//报警标志
+extern uint8_t water_alarm_state;//当前状态
+
+void Key_IO_Init(void)
+{
+    GPIO_InitTypeDef  gpio_init_structure = {0};
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /* Configure the Radio Switch pin */
+    gpio_init_structure.Pin   = KEY_ON_PIN|KEY_OFF_PIN;
+    gpio_init_structure.Mode  = GPIO_MODE_INPUT;
+    gpio_init_structure.Pull  = GPIO_NOPULL;
+    gpio_init_structure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(KEY_PORT, &gpio_init_structure);
+}
+uint8_t Read_ON_Level(void)
+{
+    return HAL_GPIO_ReadPin(KEY_PORT,KEY_ON_PIN);
+}
+uint8_t Read_OFF_Level(void)
+{
+    return HAL_GPIO_ReadPin(KEY_PORT,KEY_OFF_PIN);
+}
+void K0_Sem_Release(void *parameter)//off
+{
+    if(water_alarm_state)
+    {
+        in_alarm_press_calcel_sound();
+    }
+    else
+    {
+        water_alarm_flag = 0;
+        WaterScan_Clear();
+        led_water_resume();
+        button_press();
+        valve_close();
+    }
+
+}
+void K1_Sem_Release(void *parameter)//on
+{
+    if(water_alarm_flag)
+    {
+        in_alarm_press();
+    }
+    else
+    {
+        button_press();
+        valve_open();
+    }
+}
+void button_task_entry(void *parameter)
+{
+    Key_IO_Init();
+    Button_Create("OFF",&Key0,Read_OFF_Level,0);
+    Button_Create("ON",&Key1,Read_ON_Level,0);
+    Button_Attach(&Key0,BUTTON_DOWM,K0_Sem_Release);
+    Button_Attach(&Key1,BUTTON_DOWM,K1_Sem_Release);
+    while(1)
+    {
+        Button_Process();
+        rt_thread_mdelay(10);
+    }
+}
+void button_Init(void)
+{
+    button_task = rt_thread_create("button_task",button_task_entry,RT_NULL,512,5,10);
+    if(button_task!=RT_NULL)rt_thread_startup(button_task);
+}
