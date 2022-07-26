@@ -33,6 +33,17 @@ void Key_IO_Init(void)
     gpio_init_structure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(KEY_PORT, &gpio_init_structure);
 }
+void Key_IO_DeInit(void)
+{
+    GPIO_InitTypeDef  gpio_init_structure = {0};
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /* Configure the Radio Switch pin */
+    gpio_init_structure.Pin   = KEY_ON_PIN|KEY_OFF_PIN;
+    gpio_init_structure.Mode  = GPIO_MODE_ANALOG;
+    gpio_init_structure.Pull  = GPIO_NOPULL;
+    gpio_init_structure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(KEY_PORT, &gpio_init_structure);
+}
 uint8_t Read_ON_Level(void)
 {
     return HAL_GPIO_ReadPin(KEY_PORT,KEY_ON_PIN);

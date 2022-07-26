@@ -11,12 +11,6 @@
 #include <rtthread.h>
 #include "key.h"
 #include "led.h"
-#include "stm32g0xx.h"
-#include "pin_config.h"
-
-#define DBG_TAG "main"
-#define DBG_LVL DBG_LOG
-#include <rtdbg.h>
 
 int main(void)
 {
